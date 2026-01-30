@@ -37,10 +37,7 @@ describe('OuraProvider', () => {
         version: '1.0.0',
       },
       {
-        capabilities: {
-          resources: {},
-          tools: {},
-        },
+        capabilities: {}
       }
     );
 
@@ -91,4 +88,4 @@ describe('OuraProvider', () => {
     });
     expect(result).toBeDefined();
   });
-}); 
+});

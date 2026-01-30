@@ -32,11 +32,9 @@ export class OuraProvider {
   private async fetchOuraData(endpoint: string, params?: Record<string, string>): Promise<any> {
     const headers = await this.auth.getHeaders();
     const url = new URL(`${this.auth.getBaseUrl()}/usercollection/${endpoint}`);
-    
+
     if (params) {
-      // Log the incoming date parameters
       console.log(`Fetching ${endpoint} with dates:`, params);
-      
       Object.entries(params).forEach(([key, value]) => {
         url.searchParams.append(key, value);
       });
@@ -49,7 +47,6 @@ export class OuraProvider {
     }
 
     const data = await response.json();
-    // Log the response data dates
     if (data.data && data.data.length > 0) {
       console.log(`Response data for ${endpoint}:`, data.data.map((d: { day?: string; timestamp?: string }) => d.day || d.timestamp));
     }
@@ -57,13 +54,6 @@ export class OuraProvider {
   }
 
   private initializeResources(): void {
-    // Define the date range schema for tools
-    const dateRangeSchema = {
-      startDate: z.string(),
-      endDate: z.string()
-    };
-
-    // Add resources and tools for each endpoint
     const endpoints = [
       { name: 'personal_info', requiresDates: false },
       { name: 'daily_activity', requiresDates: true },
@@ -82,7 +72,7 @@ export class OuraProvider {
       { name: 'vO2_max', requiresDates: true }
     ];
 
-    // Add resources
+    // Register resources
     endpoints.forEach(({ name, requiresDates }) => {
       this.server.resource(
         name,
@@ -90,7 +80,6 @@ export class OuraProvider {
         async (uri) => {
           let data;
           if (requiresDates) {
-            // For date-based resources, fetch last 7 days by default
             const endDate = new Date().toISOString().split('T')[0];
             const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
             data = await this.fetchOuraData(name, { start_date: startDate, end_date: endDate });
@@ -101,6 +90,7 @@ export class OuraProvider {
           return {
             contents: [{
               uri: uri.href,
+              mimeType: 'application/json',
               text: JSON.stringify(data, null, 2)
             }]
           };
@@ -108,13 +98,26 @@ export class OuraProvider {
       );
     });
 
-    // Add tools
-    endpoints.filter(e => e.requiresDates).forEach(({ name }) => {
-      this.server.tool(
-        `get_${name}`,
-        dateRangeSchema,
+    // Register tools using registerTool for better type inference
+    const dateRangeInputSchema = z.object({
+      startDate: z.string().describe('Start date (YYYY-MM-DD)'),
+      endDate: z.string().describe('End date (YYYY-MM-DD)')
+    });
+
+    const dateBasedEndpoints = endpoints.filter(e => e.requiresDates);
+    
+    for (const { name } of dateBasedEndpoints) {
+      const toolName = `get_${name}`;
+      const endpointName = name;
+      
+      this.server.registerTool(
+        toolName,
+        {
+          description: `Get ${endpointName} data for a date range`,
+          inputSchema: dateRangeInputSchema
+        },
         async ({ startDate, endDate }) => {
-          const data = await this.fetchOuraData(name, {
+          const data = await this.fetchOuraData(endpointName, {
             start_date: startDate,
             end_date: endDate
           });
@@ -127,10 +130,10 @@ export class OuraProvider {
           };
         }
       );
-    });
+    }
   }
 
   getServer(): McpServer {
     return this.server;
   }
-} 
+}
