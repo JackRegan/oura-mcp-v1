@@ -1,6 +1,15 @@
 # Oura MCP Server
 
-A Model Context Protocol (MCP) server for accessing Oura Ring data.
+A [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) server for accessing Oura Ring health data. Provides tools and resources for querying sleep, activity, readiness, and other health metrics from the Oura API.
+
+> **Originally created by [elizabethtrykin](https://github.com/elizabethtrykin).** This fork adds OAuth2 authorization code flow (replacing Personal Access Token auth), refactored provider architecture, and improved logging.
+
+## What's Changed
+
+- **OAuth2 Authorization Code Flow** - Interactive browser-based authentication with automatic token refresh, replacing the deprecated PAT approach
+- **Token Persistence** - Tokens cached to `~/.oura-mcp/tokens.json` with secure file permissions; automatic refresh before expiry
+- **CSRF Protection** - Cryptographic state parameter validation during the OAuth callback
+- **Refactored Provider** - Simplified capabilities structure and improved tool registration and logging
 
 ## Setup
 
@@ -11,7 +20,7 @@ A Model Context Protocol (MCP) server for accessing Oura Ring data.
 ### Installation
 1. Clone the repository
 2. Run:
-```
+```bash
 npm install
 npm run build
 ```
@@ -44,7 +53,7 @@ Subsequent runs will use the cached tokens and refresh them automatically.
 ## Usage
 
 ### Testing
-```
+```bash
 node test.js <tool_name> <date>
 ```
 Example: `node test.js get_daily_sleep 2025-01-30`
@@ -68,22 +77,38 @@ Add to Claude Desktop's config (Settings > Developer > Edit Config):
 ```
 Restart Claude Desktop after saving. See [MCP docs](https://modelcontextprotocol.io/quickstart/user) for details.
 
-## Available Resources
-- `personal_info` - User profile
-- `daily_activity` - Activity summaries
-- `daily_readiness` - Readiness scores
-- `daily_sleep` - Sleep summaries
-- `sleep` - Detailed sleep data
-- `sleep_time` - Sleep timing
-- `workout` - Workout data
-- `session` - Session data
-- `daily_spo2` - SpO2 measurements
-- `rest_mode_period` - Rest periods
-- `ring_configuration` - Ring config
-- `daily_stress` - Stress metrics
-- `daily_resilience` - Resilience metrics
-- `daily_cardiovascular_age` - CV age
-- `vO2_max` - VO2 max data
-
 ## Available Tools
-For date-based resources, use tools like `get_daily_sleep` with `startDate` and `endDate` parameters (YYYY-MM-DD).
+
+All date-based tools accept `startDate` and `endDate` parameters in `YYYY-MM-DD` format.
+
+| Tool | Description |
+|------|-------------|
+| `get_daily_activity` | Activity summaries |
+| `get_daily_readiness` | Readiness scores |
+| `get_daily_sleep` | Sleep summaries |
+| `get_sleep` | Detailed sleep data |
+| `get_sleep_time` | Sleep timing recommendations |
+| `get_workout` | Workout data |
+| `get_session` | Session data |
+| `get_daily_spo2` | SpO2 measurements |
+| `get_rest_mode_period` | Rest mode periods |
+| `get_daily_stress` | Stress metrics |
+| `get_daily_resilience` | Resilience metrics |
+| `get_daily_cardiovascular_age` | Cardiovascular age |
+| `get_vO2_max` | VO2 max data |
+
+## Available Resources
+
+| Resource | Description |
+|----------|-------------|
+| `personal_info` | User profile |
+| `ring_configuration` | Ring configuration |
+
+## Credits
+
+- Original implementation by [elizabethtrykin](https://github.com/elizabethtrykin)
+- OAuth2 flow and refactoring by [JackRegan](https://github.com/JackRegan)
+
+## License
+
+ISC
