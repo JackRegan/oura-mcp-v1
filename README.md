@@ -5,35 +5,41 @@ A Model Context Protocol (MCP) server for accessing Oura Ring data.
 ## Setup
 
 ### Prerequisites
-- Node.js (v16+)
+- Node.js (v18+)
 - Oura account
 
 ### Installation
 1. Clone the repository
-2. Run: 
+2. Run:
 ```
 npm install
 npm run build
 ```
+
 ## Configuration
 
-### Obtaining Credentials
+### Obtaining OAuth2 Credentials
 1. Log in to [Oura Cloud Console](https://cloud.ouraring.com/)
-2. Get either:
-   - [Personal Access Token](https://cloud.ouraring.com/personal-access-tokens) (for testing)
-   - [OAuth2 Credentials](https://cloud.ouraring.com/oauth/applications) (for production)
+2. Go to [OAuth Applications](https://cloud.ouraring.com/oauth/applications)
+3. Create a new application
+4. Set the redirect URI to `http://localhost:3000/callback`
+5. Copy the Client ID and Client Secret
 
 ### Environment Variables
 Create a `.env` file:
 ```
-# Option 1: Personal Access Token
-OURA_PERSONAL_ACCESS_TOKEN=your_token
-
-# Option 2: OAuth2 credentials
 OURA_CLIENT_ID=your_client_id
 OURA_CLIENT_SECRET=your_client_secret
 OURA_REDIRECT_URI=http://localhost:3000/callback
 ```
+
+### First Run Authorization
+On first run, the server will:
+1. Open your browser to the Oura authorization page
+2. After you approve, redirect back to the local callback server
+3. Save tokens to `~/.oura-mcp/tokens.json`
+
+Subsequent runs will use the cached tokens and refresh them automatically.
 
 ## Usage
 
@@ -41,17 +47,21 @@ OURA_REDIRECT_URI=http://localhost:3000/callback
 ```
 node test.js <tool_name> <date>
 ```
-Example: `node test.js get_daily_sleep 2023-05-01`
+Example: `node test.js get_daily_sleep 2025-01-30`
 
 ### Claude Desktop Integration
-Add to Claude Desktop's config (Settings → Developer → Edit Config):
+Add to Claude Desktop's config (Settings > Developer > Edit Config):
 ```json
 {
     "mcpServers": {
         "oura": {
             "command": "node",
             "args": ["/absolute/path/to/oura-mcp/build/index.js"],
-            "env": {"OURA_PERSONAL_ACCESS_TOKEN": "your_token"}
+            "env": {
+                "OURA_CLIENT_ID": "your_client_id",
+                "OURA_CLIENT_SECRET": "your_client_secret",
+                "OURA_REDIRECT_URI": "http://localhost:3000/callback"
+            }
         }
     }
 }
@@ -76,4 +86,4 @@ Restart Claude Desktop after saving. See [MCP docs](https://modelcontextprotocol
 - `vO2_max` - VO2 max data
 
 ## Available Tools
-For date-based resources, use tools like `get_daily_sleep` with `startDate` and `endDate` parameters (YYYY-MM-DD). 
+For date-based resources, use tools like `get_daily_sleep` with `startDate` and `endDate` parameters (YYYY-MM-DD).

@@ -3,10 +3,7 @@ import { z } from 'zod';
 import { OuraAuth } from './oura_connection.js';
 
 export interface OuraConfig {
-  personalAccessToken?: string;
-  clientId?: string;
-  clientSecret?: string;
-  redirectUri?: string;
+  auth: OuraAuth;
 }
 
 export class OuraProvider {
@@ -14,12 +11,7 @@ export class OuraProvider {
   private auth: OuraAuth;
 
   constructor(config: OuraConfig) {
-    this.auth = new OuraAuth(
-      config.personalAccessToken,
-      config.clientId,
-      config.clientSecret,
-      config.redirectUri
-    );
+    this.auth = config.auth;
 
     this.server = new McpServer({
       name: "oura-provider",
@@ -34,7 +26,7 @@ export class OuraProvider {
     const url = new URL(`${this.auth.getBaseUrl()}/usercollection/${endpoint}`);
 
     if (params) {
-      console.log(`Fetching ${endpoint} with dates:`, params);
+      process.stderr.write(`Fetching ${endpoint} with dates: ${JSON.stringify(params)}\n`);
       Object.entries(params).forEach(([key, value]) => {
         url.searchParams.append(key, value);
       });
@@ -48,7 +40,7 @@ export class OuraProvider {
 
     const data = await response.json();
     if (data.data && data.data.length > 0) {
-      console.log(`Response data for ${endpoint}:`, data.data.map((d: { day?: string; timestamp?: string }) => d.day || d.timestamp));
+      process.stderr.write(`Response data for ${endpoint}: ${JSON.stringify(data.data.map((d: { day?: string; timestamp?: string }) => d.day || d.timestamp))}\n`);
     }
     return data;
   }
@@ -98,39 +90,39 @@ export class OuraProvider {
       );
     });
 
-    // Register tools using registerTool for better type inference
-    const dateRangeInputSchema = z.object({
+    // Register tools
+    const dateBasedEndpoints = endpoints.filter(e => e.requiresDates);
+
+    for (const { name } of dateBasedEndpoints) {
+      this.registerDateRangeTool(name);
+    }
+  }
+
+  private registerDateRangeTool(endpointName: string): void {
+    const inputSchema = {
       startDate: z.string().describe('Start date (YYYY-MM-DD)'),
       endDate: z.string().describe('End date (YYYY-MM-DD)')
-    });
+    };
 
-    const dateBasedEndpoints = endpoints.filter(e => e.requiresDates);
-    
-    for (const { name } of dateBasedEndpoints) {
-      const toolName = `get_${name}`;
-      const endpointName = name;
-      
-      this.server.registerTool(
-        toolName,
-        {
-          description: `Get ${endpointName} data for a date range`,
-          inputSchema: dateRangeInputSchema
-        },
-        async ({ startDate, endDate }) => {
-          const data = await this.fetchOuraData(endpointName, {
-            start_date: startDate,
-            end_date: endDate
-          });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (this.server as any).tool(
+      `get_${endpointName}`,
+      `Get ${endpointName} data for a date range`,
+      inputSchema,
+      async (args: { startDate: string; endDate: string }) => {
+        const data = await this.fetchOuraData(endpointName, {
+          start_date: args.startDate,
+          end_date: args.endDate
+        });
 
-          return {
-            content: [{
-              type: "text",
-              text: JSON.stringify(data, null, 2)
-            }]
-          };
-        }
-      );
-    }
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify(data, null, 2)
+          }]
+        };
+      }
+    );
   }
 
   getServer(): McpServer {

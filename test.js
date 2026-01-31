@@ -22,7 +22,9 @@ async function main() {
     command: '/opt/homebrew/bin/node',
     args: [serverPath],
     env: {
-      OURA_PERSONAL_ACCESS_TOKEN: process.env.OURA_PERSONAL_ACCESS_TOKEN,
+      OURA_CLIENT_ID: process.env.OURA_CLIENT_ID,
+      OURA_CLIENT_SECRET: process.env.OURA_CLIENT_SECRET,
+      OURA_REDIRECT_URI: process.env.OURA_REDIRECT_URI || 'http://localhost:3000/callback',
     }
   });
 

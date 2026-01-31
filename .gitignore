@@ -1,5 +1,6 @@
 # Environment variables
 .env
+credentials.env
 
 # Dependencies
 node_modules/
