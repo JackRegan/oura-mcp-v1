@@ -10,6 +10,7 @@ A [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) server for ac
 - **Token Persistence** - Tokens cached to `~/.oura-mcp/tokens.json` with secure file permissions; automatic refresh before expiry
 - **CSRF Protection** - Cryptographic state parameter validation during the OAuth callback
 - **Refactored Provider** - Simplified capabilities structure and improved tool registration and logging
+- **SQLite Caching Layer** - `get_sleep` and `get_daily_scores` cache results in a local SQLite database, avoiding redundant API calls for already-fetched date ranges
 
 ## Setup
 
@@ -35,11 +36,14 @@ npm run build
 5. Copy the Client ID and Client Secret
 
 ### Environment Variables
-Create a `.env` file:
+Create a `credentials.env` file (or pass via Claude Desktop config):
 ```
 OURA_CLIENT_ID=your_client_id
 OURA_CLIENT_SECRET=your_client_secret
 OURA_REDIRECT_URI=http://localhost:3000/callback
+
+# Optional: override the SQLite cache path (default: ~/Documents/health_data/oura_sleep.db)
+OURA_DB_PATH=/path/to/oura_sleep.db
 ```
 
 ### First Run Authorization
@@ -79,14 +83,15 @@ Restart Claude Desktop after saving. See [MCP docs](https://modelcontextprotocol
 
 ## Available Tools
 
-All date-based tools accept `startDate` and `endDate` parameters in `YYYY-MM-DD` format.
+All date-based tools accept `startDate` and `endDate` parameters in `YYYY-MM-DD` format. Tools marked **cached** store results in the local SQLite database and skip API calls for already-fetched date ranges.
 
 | Tool | Description |
 |------|-------------|
 | `get_daily_activity` | Activity summaries |
 | `get_daily_readiness` | Readiness scores |
-| `get_daily_sleep` | Sleep summaries |
-| `get_sleep` | Detailed sleep data |
+| `get_daily_sleep` | Sleep score summaries |
+| `get_sleep` | Detailed sleep records (**cached**) |
+| `get_daily_scores` | Readiness, sleep, stress, and SpO2 scores combined (**cached**) |
 | `get_sleep_time` | Sleep timing recommendations |
 | `get_workout` | Workout data |
 | `get_session` | Session data |
@@ -96,6 +101,7 @@ All date-based tools accept `startDate` and `endDate` parameters in `YYYY-MM-DD`
 | `get_daily_resilience` | Resilience metrics |
 | `get_daily_cardiovascular_age` | Cardiovascular age |
 | `get_vO2_max` | VO2 max data |
+| `oura_db_stats` | Statistics about the local SQLite cache (record counts and date ranges) |
 
 ## Available Resources
 
